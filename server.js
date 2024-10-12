@@ -7,15 +7,27 @@ require("dotenv").config(); // Carga las variables de entorno desde el archivo .
 const app = express();
 const port = 3000;
 
-// Configuración de CORS para permitir solicitudes desde el frontend
-app.use(cors());
+// Definir los orígenes permitidos
+const allowedOrigins = ["http://localhost:5500", "http://127.0.0.1:5500"];
 
-app.use(cors({ origin: "http://localhost:5500" })); // Cambia la URL al dominio de tu frontend si es diferente
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Permitir el origen si está en la lista de permitidos o si no hay origen (solicitudes de herramientas como Postman)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("No permitido por CORS"));
+      }
+    },
+  })
+);
+
 app.use(bodyParser.json());
 
 // Ruta para enviar el correo
 app.post("/send-email", async (req, res) => {
-  const { name, email, message } = req.body;
+  const { name, email, phone, message } = req.body;
 
   // Configuración del transportador de Nodemailer
   let transporter = nodemailer.createTransport({
@@ -37,6 +49,7 @@ app.post("/send-email", async (req, res) => {
     text: `Has recibido un nuevo mensaje de contacto.\n
         Nombre: ${name}\n
         Correo: ${email}\n
+        Telefono: ${phone}\n
         Mensaje:\n
         ${message}\n
     `,
